@@ -7,6 +7,28 @@ const changelogPath = path.join(root, 'changelog.md');
 const start = '<!-- changelog:commits:start -->';
 const end = '<!-- changelog:commits:end -->';
 const escapeMarkdown = (text) => text.replace(/[\\`*_[\]<>]/g, '\\$&');
+const git = (...args) =>
+  execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: 'pipe' });
+
+function changesOnlyChangelog(hash) {
+  const files = git(
+    'diff-tree',
+    '--root',
+    '--no-commit-id',
+    '--name-only',
+    '--no-renames',
+    '--diff-merges=first-parent',
+    '-r',
+    '-z',
+    hash,
+    '--',
+  )
+    .split('\0')
+    .filter(Boolean);
+  // Keep empty commits and commits that also change other files. Compare paths,
+  // not subjects, so this works with any commit message.
+  return files.length > 0 && files.every((file) => file === 'changelog.md');
+}
 
 try {
   const original = readFileSync(changelogPath, 'utf8');
@@ -26,17 +48,21 @@ try {
     );
   }
 
-  const history = execFileSync(
-    'git',
-    ['log', '--date-order', '--format=%h%x00%cI%x00%s', 'HEAD', '--'],
-    { cwd: root, encoding: 'utf8', stdio: 'pipe' },
+  const history = git(
+    'log',
+    '--date-order',
+    '--format=%H%x00%h%x00%cI%x00%s',
+    'HEAD',
+    '--',
   );
   const entries = history
     .trimEnd()
     .split('\n')
     .filter(Boolean)
-    .map((record) => {
-      const [hash, timestamp, subject] = record.split('\0');
+    .map((record) => record.split('\0'))
+    // Filter all history so later refreshes cannot bring these entries back.
+    .filter(([fullHash]) => !changesOnlyChangelog(fullHash))
+    .map(([, hash, timestamp, subject]) => {
       const date = new Date(timestamp).toISOString().slice(0, 10);
       return `- ${date}: ${escapeMarkdown(subject)} (\`${hash}\`)`;
     });

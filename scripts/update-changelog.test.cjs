@@ -100,6 +100,51 @@ test('lists history newest first without duplication across refreshes or commits
   assert.equal(repo.git('rev-list', '--count', 'HEAD').trim(), '2');
 });
 
+test('committing only the changelog leaves a clean checkout and stays excluded on later refreshes', (t) => {
+  const repo = repository(t);
+  repo.git('commit', '-m', 'feat: initial');
+  const generated = repo.read('changelog.md');
+  repo.git('add', 'changelog.md');
+  repo.git('commit', '-m', 'save generated history');
+  assert.equal(repo.read('changelog.md'), generated);
+  assert.equal(repo.git('status', '--short'), '');
+
+  // Use a changelog-like subject for a real code change to verify path filtering.
+  repo.write('app.txt', 'updated\n');
+  repo.write('changelog.md', generated + '\nManual release note.\n');
+  repo.git('add', 'app.txt', 'changelog.md');
+  repo.git('commit', '-m', 'changelog added');
+  const updated = repo.read('changelog.md');
+  assert.match(updated, /changelog added/);
+  assert.ok(!updated.includes('save generated history'));
+  assert.ok(updated.endsWith('Manual release note.\n'));
+
+  repo.git('add', 'changelog.md');
+  repo.git('commit', '-m', 'save generated history again');
+  repo.run(process.execPath, ['scripts/update-changelog.cjs']);
+  assert.equal(repo.read('changelog.md'), updated);
+  assert.equal(repo.git('status', '--short'), '');
+});
+
+test('refresh removes previously generated changelog-only entries', (t) => {
+  const repo = repository(t);
+  repo.git('commit', '-m', 'feat: initial');
+  repo.git('add', 'changelog.md');
+  repo.git('commit', '-m', 'save generated history');
+  const clean = repo.read('changelog.md');
+  const hash = repo.git('rev-parse', '--short', 'HEAD').trim();
+  repo.write(
+    'changelog.md',
+    clean.replace(
+      '## Commit history\n',
+      `## Commit history\n\n- 2026-09-18: save generated history (\`${hash}\`)\n`,
+    ),
+  );
+  repo.run(process.execPath, ['scripts/update-changelog.cjs']);
+  assert.equal(repo.read('changelog.md'), clean);
+  assert.equal(repo.git('status', '--short'), '');
+});
+
 test('keeps manual edits and does not alter staged or unrelated working files', (t) => {
   const repo = repository(t);
   repo.git('commit', '-m', 'feat: initial');

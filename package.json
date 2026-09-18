@@ -2,26 +2,46 @@
   "name": "of-acme-salary-dashboard-service",
   "version": "1.0.0",
   "description": "Node JS App for salary management by HR ",
-  "main": "index.js",
+  "main": "dist/server.js",
   "scripts": {
     "prepare": "node scripts/install-git-hooks.cjs",
     "hooks:install": "node scripts/install-git-hooks.cjs",
     "changelog:update": "node scripts/update-changelog.cjs",
-    "test": "node --test scripts/*.test.cjs"
+    "mock:data": "node scripts/generate-mock-data.cjs",
+    "test": "tsx --test scripts/*.test.cjs test/*.test.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "worker": "node dist/worker.js",
+    "test:integration": "npm run build && tsx --test test/integration/*.test.ts"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
     "@types/node": "^26.6.1",
-    "dotenv": "^18.0.0",
+    "@types/supertest": "^7.2.1",
     "eslint": "^10.10.0",
-    "express": "^5.2.1",
     "install": "^0.13.0",
     "nodemon": "^3.1.14",
     "npm": "^12.0.2",
     "prettier": "^3.9.8",
+    "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.13",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "bullmq": "^6.3.7",
+    "csv-parse": "^7.0.2",
+    "dotenv": "^18.0.0",
+    "express": "^5.2.1",
+    "ioredis": "^6.0.0",
+    "multer": "^2.4.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   }
 }

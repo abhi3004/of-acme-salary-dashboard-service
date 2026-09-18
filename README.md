@@ -17,6 +17,9 @@ After each successful local commit, the `post-commit` hook refreshes the generat
 **Commit history** section in `changelog.md` using the current branch's reachable
 history. Entries include the subject, UTC commit date, and short hash, newest first.
 Amendments replace the old history entry, and repeated runs produce no duplicates.
+Commits that change only `changelog.md` are excluded by their changed files,
+regardless of the commit message. Committing the generated update therefore leaves
+the changelog clean. Commits that also change other files are still recorded.
 
 The update remains **unstaged in your working tree**. Include it in a later commit
 when desired. The hook never creates extra commits or rewrites existing ones.
