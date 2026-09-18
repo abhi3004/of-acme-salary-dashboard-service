@@ -4,7 +4,10 @@
   "description": "Node JS App for salary management by HR ",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepare": "node scripts/install-git-hooks.cjs",
+    "hooks:install": "node scripts/install-git-hooks.cjs",
+    "changelog:update": "node scripts/update-changelog.cjs",
+    "test": "node --test scripts/*.test.cjs"
   },
   "author": "",
   "license": "ISC",
