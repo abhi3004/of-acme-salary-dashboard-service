@@ -3,7 +3,10 @@ import { Store } from './database/store';
 import { createApp } from './app';
 
 const store = new Store(config.databasePath);
-const server = createApp(store).listen(config.port, () => {
+const server = createApp(store, config.maxUploadBytes, {
+  enabled: true, adminEmail: config.adminEmail, adminPassword: config.adminPassword,
+  secureCookies: config.nodeEnv === 'production',
+}).listen(config.port, () => {
   console.log(`Salary service listening on port ${config.port}`);
 });
 let stopping = false;
