@@ -20,6 +20,8 @@ const config = {
   batchSize: integer('IMPORT_BATCH_SIZE', 500, 1000),
   dispatchIntervalMs: integer('IMPORT_DISPATCH_INTERVAL_MS', 5000, 60000),
   maxUploadBytes: 10 * 1024 * 1024,
+  adminEmail: process.env.ADMIN_EMAIL || 'admin@acme.test',
+  adminPassword: process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === 'production' ? '' : 'ChangeMe123!'),
 };
 
 export default config;

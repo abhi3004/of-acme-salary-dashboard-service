@@ -1,0 +1,50 @@
+services:
+  redis:
+    image: redis:7.4-alpine
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--appendfsync',
+        'everysec',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3000:3000'
+    environment:
+      PORT: '3000'
+      DATABASE_PATH: /app/data/salary.sqlite
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@acme.test}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD to at least 12 characters}
+    volumes:
+      - salary-data:/app/data
+  worker:
+    build: .
+    command: ['node', 'dist/worker.js']
+    restart: unless-stopped
+    stop_grace_period: 35s
+    environment:
+      DATABASE_PATH: /app/data/salary.sqlite
+      REDIS_URL: redis://redis:6379
+      IMPORT_BATCH_SIZE: '500'
+    volumes:
+      - salary-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+volumes:
+  salary-data:
+  redis-data:
