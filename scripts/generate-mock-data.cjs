@@ -21,7 +21,11 @@ const FIRST_NAMES = ['Aarav', 'Priya', 'Rohan', 'Ananya', 'Vikram', 'Neha', 'Arj
 const LAST_NAMES = ['Sharma', 'Patel', 'Singh', 'Gupta', 'Reddy', 'Iyer', 'Nair', 'Mehta', 'Joshi', 'Kapoor', 'Verma', 'Rao', 'Das', 'Chopra', 'Malhotra', 'Bose'];
 const DEPARTMENTS = ['Engineering', 'Human Resources', 'Finance', 'Sales', 'Marketing', 'Operations', 'Legal', 'Support'];
 const ROLES = ['Software Engineer', 'Senior Engineer', 'Manager', 'Analyst', 'Director', 'Associate', 'Lead', 'Consultant'];
-const STATUSES = ['active', 'inactive', 'on_leave'];
+const STATUS_DISTRIBUTION = [
+  { status: 'active', percentage: 90 },
+  { status: 'inactive', percentage: 6 },
+  { status: 'on_leave', percentage: 4 },
+];
 const COUNTRIES = [
   { country: 'India', currency: 'INR', dial: '91' },
   { country: 'United States', currency: 'USD', dial: '1' },
@@ -42,7 +46,24 @@ function randomDate(startYear, endYear) {
   return new Date(randomInt(start, end)).toISOString().slice(0, 10);
 }
 
-function makeRow(index) {
+function shuffledStatuses(rows) {
+  const statuses = [];
+  let assigned = 0;
+  STATUS_DISTRIBUTION.forEach(({ status, percentage }, index) => {
+    const count = index === STATUS_DISTRIBUTION.length - 1
+      ? rows - assigned
+      : Math.round(rows * percentage / 100);
+    statuses.push(...Array(count).fill(status));
+    assigned += count;
+  });
+  for (let i = statuses.length - 1; i > 0; i--) {
+    const j = randomInt(0, i);
+    [statuses[i], statuses[j]] = [statuses[j], statuses[i]];
+  }
+  return statuses;
+}
+
+function makeRow(index, status) {
   const first = pick(FIRST_NAMES);
   const last = pick(LAST_NAMES);
   const location = pick(COUNTRIES);
@@ -57,7 +78,7 @@ function makeRow(index) {
     department: pick(DEPARTMENTS),
     role: pick(ROLES),
     salary: `${randomInt(30000, 250000)}.${String(randomInt(0, 99)).padStart(2, '0')}`,
-    status: pick(STATUSES),
+    status,
     country: location.country,
     joining_date: joining,
     currency: location.currency,
@@ -158,8 +179,9 @@ function main() {
   }
   const outFile = path.resolve(outArg ?? `mock-employees-${rows}.csv`);
   const lines = [COLUMNS.join(',')];
+  const statuses = shuffledStatuses(rows);
   for (let i = 0; i < rows; i++) {
-    const row = makeRow(i);
+    const row = makeRow(i, statuses[i]);
     lines.push(COLUMNS.map((field) => row[field]).join(','));
   }
   fs.writeFileSync(outFile, lines.join('\n') + '\n', 'utf8');
